@@ -49,23 +49,43 @@ Tienda web de venta por catálogo: los clientes arman un carrito, confirman el p
 | `npm run db:migrate` | Aplica las migraciones pendientes |
 | `npm run db:seed` | Carga datos de ejemplo (borra los existentes) |
 
-## Despliegue en servidor local detrás de Cloudflare
+## Despliegue en servidor local con Cloudflare Tunnel
+
+El sitio corre en `localhost` en el puerto que elijas, y un **Cloudflare Tunnel nombrado** lo expone en `mkcosmetic.com` sin abrir puertos en el router.
 
 1. Compila el build standalone:
    ```bash
    npm run build
    ```
 2. Copia al servidor (o usa la misma máquina): `.next/standalone/`, `.next/static/` → `.next/standalone/.next/static/`, `public/` → `.next/standalone/public/`, y la carpeta `uploads/` junto al `server.js` (el route handler la lee desde el directorio de trabajo).
-3. Define las variables de entorno del `.env` en el servidor y ejecuta:
+3. Define las variables de entorno del `.env` en el servidor (`NEXT_PUBLIC_SITE_URL=https://mkcosmetic.com` incluido) y ejecuta el servidor en el puerto elegido, por ejemplo `4000`:
    ```bash
-   node .next/standalone/server.js
+   PORT=4000 node .next/standalone/server.js
    ```
-   Por defecto escucha en el puerto 3000 (`PORT` para cambiarlo). Deja el proceso como servicio (NSSM, Tarea programada o `pm2`).
-4. En **Cloudflare**: crea el registro DNS del dominio apuntando a la IP pública del servidor (proxy naranja activado) y redirige el puerto 80/443 del router al servidor. Lo más recomendable es poner un proxy inverso (Caddy o Nginx) delante de Node para TLS, o usar un **Cloudflare Tunnel** (`cloudflared`) que no requiere abrir puertos:
+   Dejá el proceso como servicio (NSSM, Tarea programada o `pm2`) para que sobreviva a un reinicio.
+4. Configurá el tunnel nombrado (una sola vez):
    ```bash
-   cloudflared tunnel --url http://localhost:3000
+   cloudflared tunnel login
+   cloudflared tunnel create mkcosmetics
+   cloudflared tunnel route dns mkcosmetics mkcosmetic.com
    ```
-5. Las imágenes de `/api/images/*` se sirven con `Cache-Control: public, max-age=31536000, immutable`, así Cloudflare las cachea en su CDN automáticamente.
+5. Creá `~/.cloudflared/config.yml` apuntando al mismo puerto:
+   ```yaml
+   tunnel: mkcosmetics
+   credentials-file: /ruta/a/<TUNNEL_ID>.json
+
+   ingress:
+     - hostname: mkcosmetic.com
+       service: http://localhost:4000
+     - service: http_status:404
+   ```
+6. Corré el tunnel (también como servicio, `cloudflared service install` en Windows/Linux):
+   ```bash
+   cloudflared tunnel run mkcosmetics
+   ```
+7. Las imágenes de `/api/images/*` se sirven con `Cache-Control: public, max-age=31536000, immutable`, así Cloudflare las cachea en su CDN automáticamente.
+
+> **CORS:** no hace falta configurarlo — el tunnel expone todo bajo el mismo origen (`mkcosmetic.com`), el navegador nunca hace peticiones cross-origin al backend. Lo único sensible al dominio es la protección CSRF de los Server Actions, ya cubierta en `next.config.ts` (`experimental.serverActions.allowedOrigins`).
 
 > **Importante:** respalda la carpeta `uploads/` y la base de datos; ahí vive todo el contenido de la tienda.
 

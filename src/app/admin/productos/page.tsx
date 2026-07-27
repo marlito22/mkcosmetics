@@ -16,9 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { formatCOP, imageUrl } from "@/lib/format";
-import { createBrand, createCategory } from "@/lib/actions/products";
 import { logoutAdmin } from "@/lib/actions/auth";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
 
@@ -125,31 +123,6 @@ export default async function AdminProductosPage() {
           </Table>
         </CardContent>
       </Card>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardContent className="p-6">
-            <h2 className="font-semibold">Nueva categoría</h2>
-            <form action={createCategory} className="mt-3 flex gap-2">
-              <Input name="name" placeholder="Ej: Uñas" required minLength={2} />
-              <Button type="submit" variant="secondary">
-                Agregar
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <h2 className="font-semibold">Nueva marca</h2>
-            <form action={createBrand} className="mt-3 flex gap-2">
-              <Input name="name" placeholder="Ej: Maybelline" required minLength={2} />
-              <Button type="submit" variant="secondary">
-                Agregar
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

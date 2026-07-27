@@ -8,8 +8,9 @@ import fs from "node:fs/promises";
 import sharp from "sharp";
 import { z } from "zod";
 import { db } from "@/db";
-import { brands, categories, productImages, products } from "@/db/schema";
+import { productImages, products } from "@/db/schema";
 import { isAdminAuthenticated } from "@/lib/auth";
+import { slugify } from "@/lib/slug";
 
 const UPLOADS_DIR = path.join(process.cwd(), "uploads", "products");
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -27,17 +28,7 @@ const productSchema = z.object({
 
 export type ProductFormState = { error?: string };
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-    .slice(0, 200);
-}
-
-async function requireAdmin(): Promise<void> {
+export async function requireAdmin(): Promise<void> {
   if (!(await isAdminAuthenticated())) {
     throw new Error("No autorizado");
   }
@@ -218,30 +209,3 @@ export async function deleteProduct(productId: number): Promise<void> {
   revalidatePath("/admin/productos");
 }
 
-const nameSchema = z.string().min(2).max(120);
-
-export async function createCategory(formData: FormData): Promise<void> {
-  await requireAdmin();
-  const parsed = nameSchema.safeParse(formData.get("name"));
-  if (!parsed.success) return;
-  const slug = slugify(parsed.data);
-  await db
-    .insert(categories)
-    .values({ name: parsed.data, slug })
-    .onConflictDoNothing();
-  revalidatePath("/admin/productos");
-  revalidatePath("/");
-}
-
-export async function createBrand(formData: FormData): Promise<void> {
-  await requireAdmin();
-  const parsed = nameSchema.safeParse(formData.get("name"));
-  if (!parsed.success) return;
-  const slug = slugify(parsed.data);
-  await db
-    .insert(brands)
-    .values({ name: parsed.data, slug })
-    .onConflictDoNothing();
-  revalidatePath("/admin/productos");
-  revalidatePath("/");
-}
