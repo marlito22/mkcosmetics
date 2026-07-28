@@ -1,8 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Lock } from "lucide-react";
 import { getCategories } from "@/lib/queries";
 import { SearchBar } from "@/components/search-bar";
 import { CartButton } from "@/components/cart-button";
+import { Button } from "@/components/ui/button";
 
 export async function Navbar() {
   const cats = await getCategories();
@@ -28,6 +30,17 @@ export async function Navbar() {
           <div className="hidden md:block flex-1 max-w-md">
             <SearchBar />
           </div>
+
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-primary"
+          >
+            <Link href="/admin/login" aria-label="Acceso administrador">
+              <Lock className="size-5" />
+            </Link>
+          </Button>
 
           <CartButton />
         </div>

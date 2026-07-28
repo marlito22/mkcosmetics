@@ -41,53 +41,88 @@ export default async function AdminCategoriasPage() {
 
       <Card className="py-0">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Slug</TableHead>
-                <TableHead className="text-right">Productos</TableHead>
-                <TableHead className="w-32 text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {c.slug}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {c.products.length}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/admin/categorias/${c.id}/editar`}>
-                          Editar
-                        </Link>
-                      </Button>
-                      <DeleteCategoryButton
-                        categoryId={c.id}
-                        categoryName={c.name}
-                        productCount={c.products.length}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {items.length === 0 && (
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="py-8 text-center text-muted-foreground"
-                  >
-                    No hay categorías todavía.
-                  </TableCell>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Slug</TableHead>
+                  <TableHead className="text-right">Productos</TableHead>
+                  <TableHead className="w-32 text-right">Acciones</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {items.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium">{c.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {c.slug}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {c.products.length}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button asChild variant="ghost" size="sm">
+                          <Link href={`/admin/categorias/${c.id}/editar`}>
+                            Editar
+                          </Link>
+                        </Button>
+                        <DeleteCategoryButton
+                          categoryId={c.id}
+                          categoryName={c.name}
+                          productCount={c.products.length}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {items.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      No hay categorías todavía.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="divide-y divide-border md:hidden">
+            {items.map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center justify-between gap-3 p-4"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{c.name}</p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {c.slug} · {c.products.length} productos
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href={`/admin/categorias/${c.id}/editar`}>
+                      Editar
+                    </Link>
+                  </Button>
+                  <DeleteCategoryButton
+                    categoryId={c.id}
+                    categoryName={c.name}
+                    productCount={c.products.length}
+                  />
+                </div>
+              </div>
+            ))}
+            {items.length === 0 && (
+              <p className="py-8 text-center text-muted-foreground">
+                No hay categorías todavía.
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

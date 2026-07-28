@@ -52,50 +52,104 @@ export default async function AdminProductosPage() {
 
       <Card className="py-0">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-16"></TableHead>
-                <TableHead>Producto</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Marca</TableHead>
-                <TableHead className="text-right">Precio</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="w-32 text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>
-                    <div className="relative size-10 overflow-hidden rounded-md bg-muted">
-                      <Image
-                        src={imageUrl(p.images[0]?.path)}
-                        alt=""
-                        fill
-                        sizes="40px"
-                        className="object-cover"
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-16"></TableHead>
+                  <TableHead>Producto</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead>Marca</TableHead>
+                  <TableHead className="text-right">Precio</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="w-32 text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell>
+                      <div className="relative size-10 overflow-hidden rounded-md bg-muted">
+                        <Image
+                          src={imageUrl(p.images[0]?.path)}
+                          alt=""
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {p.name}
+                      {p.featured && (
+                        <Badge variant="secondary" className="ml-2">
+                          Destacado
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {p.category?.name ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {p.brand?.name ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCOP(p.price)}
+                    </TableCell>
+                    <TableCell>
+                      {p.available ? (
+                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                          Disponible
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">Oculto</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button asChild variant="ghost" size="sm">
+                          <Link href={`/admin/productos/${p.id}/editar`}>
+                            Editar
+                          </Link>
+                        </Button>
+                        <DeleteProductButton
+                          productId={p.id}
+                          productName={p.name}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="divide-y divide-border md:hidden">
+            {items.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 p-4">
+                <div className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted">
+                  <Image
+                    src={imageUrl(p.images[0]?.path)}
+                    alt=""
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">
                     {p.name}
                     {p.featured && (
                       <Badge variant="secondary" className="ml-2">
                         Destacado
                       </Badge>
                     )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {p.category?.name ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {p.brand?.name ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatCOP(p.price)}
-                  </TableCell>
-                  <TableCell>
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {p.category?.name ?? "—"} · {p.brand?.name ?? "—"}
+                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-sm">{formatCOP(p.price)}</span>
                     {p.available ? (
                       <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
                         Disponible
@@ -103,24 +157,22 @@ export default async function AdminProductosPage() {
                     ) : (
                       <Badge variant="outline">Oculto</Badge>
                     )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/admin/productos/${p.id}/editar`}>
-                          Editar
-                        </Link>
-                      </Button>
-                      <DeleteProductButton
-                        productId={p.id}
-                        productName={p.name}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href={`/admin/productos/${p.id}/editar`}>
+                      Editar
+                    </Link>
+                  </Button>
+                  <DeleteProductButton
+                    productId={p.id}
+                    productName={p.name}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 
 export default function AdminLayout({
   children,
@@ -26,7 +27,7 @@ export default function AdminLayout({
                 Admin
               </span>
             </Link>
-            <nav className="flex items-center gap-4 text-sm">
+            <nav className="hidden items-center gap-4 text-sm md:flex">
               <Link
                 href="/admin/productos"
                 className="text-muted-foreground hover:text-primary"
@@ -49,10 +50,13 @@ export default function AdminLayout({
           </div>
           <Link
             href="/"
-            className="text-sm text-muted-foreground hover:text-primary"
+            className="hidden text-sm text-muted-foreground hover:text-primary md:block"
           >
             Ver tienda →
           </Link>
+          <div className="md:hidden">
+            <AdminMobileNav />
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
