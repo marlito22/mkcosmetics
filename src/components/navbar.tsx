@@ -31,18 +31,20 @@ export async function Navbar() {
             <SearchBar />
           </div>
 
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-primary"
-          >
-            <Link href="/admin/login" aria-label="Acceso administrador">
-              <Lock className="size-5" />
-            </Link>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-primary"
+            >
+              <Link href="/admin/login" aria-label="Acceso administrador">
+                <Lock className="size-5" />
+              </Link>
+            </Button>
 
-          <CartButton />
+            <CartButton />
+          </div>
         </div>
 
         <div className="md:hidden pb-3">
