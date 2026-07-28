@@ -30,7 +30,7 @@ export type ProductFormState = { error?: string };
 
 export async function requireAdmin(): Promise<void> {
   if (!(await isAdminAuthenticated())) {
-    throw new Error("No autorizado");
+    redirect("/admin/login");
   }
 }
 
@@ -140,10 +140,18 @@ export async function updateProduct(
 ): Promise<ProductFormState> {
   await requireAdmin();
 
-  const existing = await db.query.products.findFirst({
-    where: eq(products.id, productId),
-    with: { images: true },
-  });
+  let existing;
+  try {
+    existing = await db.query.products.findFirst({
+      where: eq(products.id, productId),
+      with: { images: true },
+    });
+  } catch (err) {
+    console.error(`Error al buscar el producto ${productId}:`, err);
+    return {
+      error: err instanceof Error ? err.message : "Error al buscar el producto.",
+    };
+  }
   if (!existing) return { error: "El producto no existe." };
 
   const parsed = parseProductForm(formData);
@@ -182,19 +190,26 @@ export async function updateProduct(
     }
   }
 
-  await db
-    .update(products)
-    .set({
-      name: parsed.data.name,
-      slug,
-      description: parsed.data.description ?? null,
-      price: parsed.data.price,
-      categoryId: parsed.data.categoryId ?? null,
-      brandId: parsed.data.brandId ?? null,
-      available: parsed.data.available,
-      featured: parsed.data.featured,
-    })
-    .where(eq(products.id, productId));
+  try {
+    await db
+      .update(products)
+      .set({
+        name: parsed.data.name,
+        slug,
+        description: parsed.data.description ?? null,
+        price: parsed.data.price,
+        categoryId: parsed.data.categoryId ?? null,
+        brandId: parsed.data.brandId ?? null,
+        available: parsed.data.available,
+        featured: parsed.data.featured,
+      })
+      .where(eq(products.id, productId));
+  } catch (err) {
+    console.error(`Error al actualizar el producto ${productId}:`, err);
+    return {
+      error: err instanceof Error ? err.message : "Error al actualizar el producto.",
+    };
+  }
 
   revalidatePath("/");
   redirect("/admin/productos");
@@ -203,17 +218,22 @@ export async function updateProduct(
 export async function deleteProduct(productId: number): Promise<void> {
   await requireAdmin();
 
-  const existing = await db.query.products.findFirst({
-    where: eq(products.id, productId),
-    with: { images: true },
-  });
-  if (!existing) return;
+  try {
+    const existing = await db.query.products.findFirst({
+      where: eq(products.id, productId),
+      with: { images: true },
+    });
+    if (!existing) return;
 
-  await db.delete(products).where(eq(products.id, productId));
-  for (const img of existing.images) {
-    await fs
-      .unlink(path.join(process.cwd(), "uploads", img.path))
-      .catch(() => {});
+    await db.delete(products).where(eq(products.id, productId));
+    for (const img of existing.images) {
+      await fs
+        .unlink(path.join(process.cwd(), "uploads", img.path))
+        .catch(() => {});
+    }
+  } catch (err) {
+    console.error(`Error al eliminar el producto ${productId}:`, err);
+    throw err;
   }
 
   revalidatePath("/");
