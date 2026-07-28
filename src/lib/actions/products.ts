@@ -99,26 +99,34 @@ export async function createProduct(
     }
   }
 
-  const [product] = await db
-    .insert(products)
-    .values({
-      name: parsed.data.name,
-      slug,
-      description: parsed.data.description ?? null,
-      price: parsed.data.price,
-      categoryId: parsed.data.categoryId ?? null,
-      brandId: parsed.data.brandId ?? null,
-      available: parsed.data.available,
-      featured: parsed.data.featured,
-    })
-    .returning();
+  let product;
+  try {
+    [product] = await db
+      .insert(products)
+      .values({
+        name: parsed.data.name,
+        slug,
+        description: parsed.data.description ?? null,
+        price: parsed.data.price,
+        categoryId: parsed.data.categoryId ?? null,
+        brandId: parsed.data.brandId ?? null,
+        available: parsed.data.available,
+        featured: parsed.data.featured,
+      })
+      .returning();
 
-  if (imagePath) {
-    await db.insert(productImages).values({
-      productId: product.id,
-      path: imagePath,
-      position: 0,
-    });
+    if (imagePath) {
+      await db.insert(productImages).values({
+        productId: product.id,
+        path: imagePath,
+        position: 0,
+      });
+    }
+  } catch (err) {
+    console.error("Error al crear el producto:", err);
+    return {
+      error: err instanceof Error ? err.message : "Error al crear el producto.",
+    };
   }
 
   revalidatePath("/");
@@ -150,25 +158,28 @@ export async function updateProduct(
 
   const file = formData.get("image");
   if (file instanceof File && file.size > 0) {
-    let imagePath: string;
     try {
-      imagePath = await saveImage(file, slug);
+      const imagePath = await saveImage(file, slug);
+      // Reemplaza la imagen principal y elimina el archivo anterior
+      const oldImage = existing.images[0];
+      if (oldImage) {
+        await db.delete(productImages).where(eq(productImages.id, oldImage.id));
+        await fs
+          .unlink(path.join(process.cwd(), "uploads", oldImage.path))
+          .catch(() => {});
+      }
+      await db.insert(productImages).values({
+        productId,
+        path: imagePath,
+        position: 0,
+      });
     } catch (err) {
-      return { error: err instanceof Error ? err.message : "Error al subir la imagen." };
+      console.error(`Error al guardar la imagen del producto ${productId}:`, err);
+      return {
+        error:
+          err instanceof Error ? err.message : "Error al subir la imagen.",
+      };
     }
-    // Reemplaza la imagen principal y elimina el archivo anterior
-    const oldImage = existing.images[0];
-    if (oldImage) {
-      await db.delete(productImages).where(eq(productImages.id, oldImage.id));
-      await fs
-        .unlink(path.join(process.cwd(), "uploads", oldImage.path))
-        .catch(() => {});
-    }
-    await db.insert(productImages).values({
-      productId,
-      path: imagePath,
-      position: 0,
-    });
   }
 
   await db
