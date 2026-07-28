@@ -48,6 +48,12 @@ cp -a "$ROOT/.next/static" "$RUNTIME_ROOT/.next/"
 # public assets; copy them beside the runtime server as well.
 rm -rf "$RUNTIME_ROOT/public"
 cp -a "$ROOT/public" "$RUNTIME_ROOT/public"
+# Product photos are persistent application data, not build output. Keep the
+# canonical uploads directory outside .next so a clean standalone rebuild
+# cannot remove it, and expose it to the runtime through a symlink.
+mkdir -p "$ROOT/uploads/products"
+rm -rf "$RUNTIME_ROOT/uploads"
+ln -s "$ROOT/uploads" "$RUNTIME_ROOT/uploads"
 STEP="restart service"
 sudo -n systemctl restart "$SERVICE"
 sudo -n systemctl is-active --quiet "$SERVICE"
