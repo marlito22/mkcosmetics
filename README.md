@@ -53,11 +53,11 @@ Tienda web de venta por catálogo: los clientes arman un carrito, confirman el p
 
 El sitio corre en `localhost` en el puerto que elijas, y un **Cloudflare Tunnel nombrado** lo expone en `mkcosmetic.com` sin abrir puertos en el router.
 
-1. Compila el build standalone:
+1. Compila el build standalone (el script `postbuild` copia automáticamente `public/` y `.next/static/` dentro de `.next/standalone/`, así el standalone nunca queda con imágenes o CSS/JS viejos o faltantes):
    ```bash
    npm run build
    ```
-2. Copia al servidor (o usa la misma máquina): `.next/standalone/`, `.next/static/` → `.next/standalone/.next/static/`, `public/` → `.next/standalone/public/`, y la carpeta `uploads/` junto al `server.js` (el route handler la lee desde el directorio de trabajo).
+2. Copia `.next/standalone/` al servidor (o usa la misma máquina) junto con la carpeta `uploads/` al lado del `server.js` (el route handler la lee desde el directorio de trabajo).
 3. Define las variables de entorno del `.env` en el servidor (`NEXT_PUBLIC_SITE_URL=https://mkcosmetic.com` incluido) y ejecuta el servidor en el puerto elegido, por ejemplo `4000`:
    ```bash
    PORT=4000 node .next/standalone/server.js
