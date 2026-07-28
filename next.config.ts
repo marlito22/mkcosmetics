@@ -6,9 +6,12 @@ const nextConfig: NextConfig = {
   // Permite acceder al dev server (y su HMR) desde esta IP de LAN
   allowedDevOrigins: ["26.218.78.183"],
   experimental: {
-    // Dominio público detrás del Cloudflare Tunnel: valida el CSRF check de los Server Actions
     serverActions: {
+      // Dominio público detrás del Cloudflare Tunnel: valida el CSRF check de los Server Actions
       allowedOrigins: ["mkcosmetic.com", "www.mkcosmetic.com"],
+      // Por defecto Next limita el body a 1mb; las fotos de producto admiten hasta 8mb
+      // (ver MAX_IMAGE_BYTES en src/lib/actions/products.ts), + margen para overhead de multipart.
+      bodySizeLimit: "10mb",
     },
   },
 };
