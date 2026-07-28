@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Permite acceder al dev server (y su HMR) desde esta IP de LAN
   allowedDevOrigins: ["26.218.78.183"],
+  // El output file tracing de Next no detecta los binarios nativos de sharp
+  // (libvips), asi que hay que forzar su inclusion en el standalone o falla
+  // en runtime con "Could not load the sharp module".
+  outputFileTracingIncludes: {
+    "/*": ["./node_modules/sharp/**/*", "./node_modules/@img/**/*"],
+  },
   experimental: {
     serverActions: {
       // Dominio público detrás del Cloudflare Tunnel: valida el CSRF check de los Server Actions
