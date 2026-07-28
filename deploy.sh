@@ -44,6 +44,10 @@ STEP="refresh runtime"
 RUNTIME_ROOT="$ROOT/.next/standalone/Cositas-de-Jarvis/mkcosmetics"
 rm -rf "$RUNTIME_ROOT/.next/static"
 cp -a "$ROOT/.next/static" "$RUNTIME_ROOT/.next/"
+# The standalone server does not automatically include the repository's
+# public assets; copy them beside the runtime server as well.
+rm -rf "$RUNTIME_ROOT/public"
+cp -a "$ROOT/public" "$RUNTIME_ROOT/public"
 STEP="restart service"
 sudo -n systemctl restart "$SERVICE"
 sudo -n systemctl is-active --quiet "$SERVICE"
