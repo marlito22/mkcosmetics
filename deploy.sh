@@ -29,7 +29,9 @@ fi
 STEP="prepare repo"
 git fetch --prune origin
 git checkout "$BRANCH"
-git merge --ff-only "origin/$BRANCH"
+# The server may contain an operational deploy fix that has not been pushed
+# upstream. Integrate remote changes without discarding that local commit.
+git merge --no-edit "origin/$BRANCH"
 COMMIT="$(git rev-parse HEAD)"
 
 STEP="install dependencies"
