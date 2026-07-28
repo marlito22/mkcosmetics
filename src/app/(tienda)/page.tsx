@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
@@ -15,19 +16,21 @@ export default async function HomePage() {
   return (
     <div className="mx-auto max-w-7xl px-4">
       {/* Hero */}
-      <section className="mt-6 overflow-hidden rounded-3xl bg-gradient-to-r from-primary/90 to-pink-400 px-8 py-16 text-center text-primary-foreground sm:py-24">
-        <h1 className="text-3xl font-bold sm:text-5xl">
-          Tu belleza, a un clic de distancia
-        </h1>
-        <p className="mx-auto mt-4 max-w-xl text-sm sm:text-base opacity-90">
-          Descubre nuestro catálogo de maquillaje y cosméticos. Arma tu pedido
-          en línea y te lo confirmamos por correo.
-        </p>
+      <section className="mt-6 text-center">
+        <h1 className="sr-only">Tu belleza, a un clic de distancia</h1>
+        <div className="relative h-64 overflow-hidden rounded-3xl sm:h-96">
+          <Image
+            src="/hero-banner.jpg"
+            alt="MK Cosmetics — Realza tu belleza, expresa tu esencia"
+            fill
+            priority
+            className="object-fill"
+          />
+        </div>
         <Button
           asChild
           size="lg"
-          variant="secondary"
-          className="mt-8 rounded-full font-semibold"
+          className="mt-6 rounded-full font-semibold"
         >
           <Link href="/tienda">
             Ver catálogo <ArrowRight className="size-4" />

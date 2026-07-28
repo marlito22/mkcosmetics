@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import Image from "next/image";
 
 export default function AdminLayout({
   children,
@@ -12,7 +12,13 @@ export default function AdminLayout({
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link href="/admin/productos" className="flex items-center gap-2">
-              <Sparkles className="size-5 text-primary" />
+              <Image
+                src="/logo-mark.png"
+                alt="MK Cosmetics"
+                width={32}
+                height={32}
+                className="rounded-full"
+              />
               <span className="font-bold">
                 MK <span className="text-primary">Cosmetics</span>
               </span>

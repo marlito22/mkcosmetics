@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import Image from "next/image";
 import { getCategories } from "@/lib/queries";
 import { SearchBar } from "@/components/search-bar";
 import { CartButton } from "@/components/cart-button";
@@ -12,7 +12,14 @@ export async function Navbar() {
       <div className="mx-auto max-w-7xl px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <Sparkles className="size-6 text-primary" />
+            <Image
+              src="/logo-mark.png"
+              alt="MK Cosmetics"
+              width={40}
+              height={40}
+              className="rounded-full"
+              priority
+            />
             <span className="text-xl font-bold tracking-tight">
               MK <span className="text-primary">Cosmetics</span>
             </span>
