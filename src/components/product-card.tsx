@@ -12,7 +12,7 @@ export function ProductCard({ product }: { product: ProductWithRelations }) {
   const hasVariants = product.variants.length > 0;
 
   return (
-    <Card className="group overflow-hidden border-border/70 py-0 gap-0 transition-shadow hover:shadow-lg hover:shadow-primary/10">
+    <Card className="group flex h-full flex-col overflow-hidden border-border/70 py-0 gap-0 transition-shadow hover:shadow-lg hover:shadow-primary/10">
       <Link
         href={`/producto/${product.slug}`}
         className="relative block aspect-square overflow-hidden bg-muted"
@@ -25,7 +25,7 @@ export function ProductCard({ product }: { product: ProductWithRelations }) {
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
       </Link>
-      <CardContent className="flex flex-col gap-1 p-4">
+      <CardContent className="flex flex-1 flex-col gap-1 p-4">
         {product.brand && (
           <span className="text-xs uppercase tracking-wide text-muted-foreground">
             {product.brand.name}
@@ -41,14 +41,14 @@ export function ProductCard({ product }: { product: ProductWithRelations }) {
           {formatCOP(product.price)}
         </span>
         {hasVariants ? (
-          <Button asChild className="mt-2 rounded-full">
+          <Button asChild className="mt-auto rounded-full">
             <Link href={`/producto/${product.slug}`}>
               <Palette className="size-4" />
               Ver tonos
             </Link>
           </Button>
         ) : (
-          <AddToCartButton product={product} className="mt-2" />
+          <AddToCartButton product={product} className="mt-auto" />
         )}
       </CardContent>
     </Card>
