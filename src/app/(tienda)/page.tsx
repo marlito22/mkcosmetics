@@ -39,10 +39,9 @@ export default async function HomePage() {
         {/* Marcas */}
         {brandList.length > 0 && (
           <section className="mt-14">
-            <h2 className="text-xl font-bold sm:text-2xl">Compra por marca</h2>
             <Carousel
               opts={{ align: "start", loop: brandList.length > 3 }}
-              className="mt-5 px-8 sm:px-10"
+              className="px-8 sm:px-10"
             >
               <CarouselContent>
                 {brandList.map((b) => (
