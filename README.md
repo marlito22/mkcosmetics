@@ -46,14 +46,14 @@ Tienda web de venta por catálogo: los clientes arman un carrito, confirman el p
 | Script | Descripción |
 | --- | --- |
 | `npm run db:generate` | Genera migraciones SQL a partir de `src/db/schema.ts` |
-| `npm run db:migrate` | Aplica las migraciones pendientes |
+| `npm run db:migrate` | Aplica las migraciones pendientes (también corre automáticamente en el `postbuild` de `npm run build`) |
 | `npm run db:seed` | Carga datos de ejemplo (borra los existentes) |
 
 ## Despliegue en servidor local con Cloudflare Tunnel
 
 El sitio corre en `localhost` en el puerto que elijas, y un **Cloudflare Tunnel nombrado** lo expone en `mkcosmetic.com` sin abrir puertos en el router.
 
-1. Compila el build standalone (el script `postbuild` copia automáticamente `public/` y `.next/static/` dentro de `.next/standalone/`, así el standalone nunca queda con imágenes o CSS/JS viejos o faltantes):
+1. Compila el build standalone (el script `postbuild` copia automáticamente `public/` y `.next/static/` dentro de `.next/standalone/`, y aplica las migraciones pendientes con `drizzle-kit migrate` contra el `DATABASE_URL` del `.env`, así el servidor nunca queda desincronizado del schema del código):
    ```bash
    npm run build
    ```

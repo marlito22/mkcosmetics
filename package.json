@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "node scripts/copy-standalone-assets.js",
+    "postbuild": "node scripts/copy-standalone-assets.js && drizzle-kit migrate",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
