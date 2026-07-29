@@ -3,6 +3,13 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { getBrands, getFeaturedProducts } from "@/lib/queries";
 import { imageUrl } from "@/lib/format";
 
@@ -40,29 +47,42 @@ export default async function HomePage() {
       </section>
 
       {/* Marcas */}
-      <section className="mt-14">
-        <h2 className="text-xl font-bold sm:text-2xl">Compra por marca</h2>
-        <div className="mt-5 grid grid-cols-3 gap-4 sm:grid-cols-4 lg:grid-cols-6">
-          {brandList.map((b) => (
-            <Link
-              key={b.id}
-              href={`/tienda?marca=${b.slug}`}
-              className="group flex flex-col items-center gap-2 text-center"
-            >
-              <div className="relative size-20 overflow-hidden rounded-full border border-border bg-secondary/60 transition-colors group-hover:border-primary sm:size-24">
-                <Image
-                  src={imageUrl(b.imagePath)}
-                  alt={b.name}
-                  fill
-                  sizes="96px"
-                  className="object-cover"
-                />
-              </div>
-              <span className="text-sm font-medium">{b.name}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {brandList.length > 0 && (
+        <section className="mt-14">
+          <h2 className="text-xl font-bold sm:text-2xl">Compra por marca</h2>
+          <Carousel
+            opts={{ align: "start", loop: brandList.length > 3 }}
+            className="mt-5 px-8 sm:px-10"
+          >
+            <CarouselContent>
+              {brandList.map((b) => (
+                <CarouselItem
+                  key={b.id}
+                  className="basis-1/3 sm:basis-1/4 lg:basis-1/6"
+                >
+                  <Link
+                    href={`/tienda?marca=${b.slug}`}
+                    className="group flex flex-col items-center gap-2 text-center"
+                  >
+                    <div className="relative size-20 overflow-hidden rounded-full border border-border bg-secondary/60 transition-colors group-hover:border-primary sm:size-24">
+                      <Image
+                        src={imageUrl(b.imagePath)}
+                        alt={b.name}
+                        fill
+                        sizes="96px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <span className="text-sm font-medium">{b.name}</span>
+                  </Link>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="-left-2 sm:-left-8" />
+            <CarouselNext className="-right-2 sm:-right-8" />
+          </Carousel>
+        </section>
+      )}
 
       {/* Destacados */}
       <section className="mt-14">
