@@ -1,0 +1,1 @@
+ALTER TABLE "brands" ADD COLUMN "image_path" varchar(500);

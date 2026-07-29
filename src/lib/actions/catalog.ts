@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { brands, categories } from "@/db/schema";
 import { requireAdmin } from "@/lib/actions/products";
 import { slugify } from "@/lib/slug";
+import { saveImage, unlinkImage } from "@/lib/images";
 
 export type CatalogFormState = { error?: string };
 
@@ -106,7 +107,18 @@ export async function createBrand(
     return { error: "El nombre debe tener entre 2 y 120 caracteres." };
   }
   const slug = await uniqueBrandSlug(parsed.data);
-  await db.insert(brands).values({ name: parsed.data, slug });
+
+  let imagePath: string | null = null;
+  const file = formData.get("image");
+  if (file instanceof File && file.size > 0) {
+    try {
+      imagePath = await saveImage(file, slug, "brands");
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Error al subir la imagen." };
+    }
+  }
+
+  await db.insert(brands).values({ name: parsed.data, slug, imagePath });
 
   revalidatePath("/admin/marcas");
   revalidatePath("/admin/productos");
@@ -135,9 +147,22 @@ export async function updateBrand(
       ? existing.slug
       : await uniqueBrandSlug(parsed.data, brandId);
 
+  let imagePath = existing.imagePath;
+  const file = formData.get("image");
+  if (file instanceof File && file.size > 0) {
+    try {
+      imagePath = await saveImage(file, slug, "brands");
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Error al subir la imagen." };
+    }
+    if (existing.imagePath) {
+      await unlinkImage(existing.imagePath);
+    }
+  }
+
   await db
     .update(brands)
-    .set({ name: parsed.data, slug })
+    .set({ name: parsed.data, slug, imagePath })
     .where(eq(brands.id, brandId));
 
   revalidatePath("/admin/marcas");
@@ -148,7 +173,13 @@ export async function updateBrand(
 
 export async function deleteBrand(brandId: number): Promise<void> {
   await requireAdmin();
+  const existing = await db.query.brands.findFirst({
+    where: eq(brands.id, brandId),
+  });
   await db.delete(brands).where(eq(brands.id, brandId));
+  if (existing?.imagePath) {
+    await unlinkImage(existing.imagePath);
+  }
 
   revalidatePath("/admin/marcas");
   revalidatePath("/admin/productos");

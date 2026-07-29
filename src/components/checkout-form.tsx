@@ -54,7 +54,11 @@ export function CheckoutForm() {
     try {
       const result = await createOrder(
         data,
-        items.map((i) => ({ productId: i.productId, quantity: i.quantity }))
+        items.map((i) => ({
+          productId: i.productId,
+          variantId: i.variantId,
+          quantity: i.quantity,
+        }))
       );
       if (result.ok) {
         clear();
@@ -148,11 +152,12 @@ export function CheckoutForm() {
           <div className="space-y-2 text-sm">
             {items.map((item) => (
               <div
-                key={item.productId}
+                key={`${item.productId}-${item.variantId ?? "base"}`}
                 className="flex justify-between text-muted-foreground"
               >
                 <span className="line-clamp-1 pr-2">
                   {item.quantity} × {item.name}
+                  {item.variantName ? ` (${item.variantName})` : ""}
                 </span>
                 <span className="shrink-0">
                   {formatCOP(item.price * item.quantity)}

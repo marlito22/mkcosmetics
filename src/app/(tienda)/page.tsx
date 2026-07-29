@@ -3,14 +3,15 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
-import { getCategories, getFeaturedProducts } from "@/lib/queries";
+import { getBrands, getFeaturedProducts } from "@/lib/queries";
+import { imageUrl } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [featured, cats] = await Promise.all([
+  const [featured, brandList] = await Promise.all([
     getFeaturedProducts(8),
-    getCategories(),
+    getBrands(),
   ]);
 
   return (
@@ -38,17 +39,26 @@ export default async function HomePage() {
         </Button>
       </section>
 
-      {/* Categorías */}
+      {/* Marcas */}
       <section className="mt-14">
-        <h2 className="text-xl font-bold sm:text-2xl">Compra por categoría</h2>
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {cats.map((c) => (
+        <h2 className="text-xl font-bold sm:text-2xl">Compra por marca</h2>
+        <div className="mt-5 grid grid-cols-3 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+          {brandList.map((b) => (
             <Link
-              key={c.id}
-              href={`/tienda?categoria=${c.slug}`}
-              className="flex items-center justify-center rounded-2xl border border-border bg-secondary/60 px-4 py-6 text-center text-sm font-medium transition-colors hover:border-primary hover:bg-accent hover:text-accent-foreground"
+              key={b.id}
+              href={`/tienda?marca=${b.slug}`}
+              className="group flex flex-col items-center gap-2 text-center"
             >
-              {c.name}
+              <div className="relative size-20 overflow-hidden rounded-full border border-border bg-secondary/60 transition-colors group-hover:border-primary sm:size-24">
+                <Image
+                  src={imageUrl(b.imagePath)}
+                  alt={b.name}
+                  fill
+                  sizes="96px"
+                  className="object-cover"
+                />
+              </div>
+              <span className="text-sm font-medium">{b.name}</span>
             </Link>
           ))}
         </div>

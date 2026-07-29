@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { brands, categories, products } from "@/db/schema";
+import { brands, categories, productImages, productVariants, products } from "@/db/schema";
 import { and, asc, count, desc, eq, ilike, or, type SQL } from "drizzle-orm";
 
 export const PRODUCTS_PER_PAGE = 12;
@@ -15,7 +15,12 @@ export async function getBrands() {
 export async function getFeaturedProducts(limit = 8) {
   return db.query.products.findMany({
     where: and(eq(products.featured, true), eq(products.available, true)),
-    with: { images: true, brand: true, category: true },
+    with: {
+      images: { orderBy: asc(productImages.position) },
+      variants: { orderBy: asc(productVariants.position) },
+      brand: true,
+      category: true,
+    },
     orderBy: desc(products.createdAt),
     limit,
   });
@@ -58,7 +63,12 @@ export async function getProducts(filters: ProductFilters) {
   const [items, [{ total }]] = await Promise.all([
     db.query.products.findMany({
       where,
-      with: { images: true, brand: true, category: true },
+      with: {
+      images: { orderBy: asc(productImages.position) },
+      variants: { orderBy: asc(productVariants.position) },
+      brand: true,
+      category: true,
+    },
       orderBy: desc(products.createdAt),
       limit: PRODUCTS_PER_PAGE,
       offset: (page - 1) * PRODUCTS_PER_PAGE,
@@ -77,7 +87,12 @@ export async function getProducts(filters: ProductFilters) {
 export async function getProductBySlug(slug: string) {
   return db.query.products.findFirst({
     where: eq(products.slug, slug),
-    with: { images: true, brand: true, category: true },
+    with: {
+      images: { orderBy: asc(productImages.position) },
+      variants: { orderBy: asc(productVariants.position) },
+      brand: true,
+      category: true,
+    },
   });
 }
 

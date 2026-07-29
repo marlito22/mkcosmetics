@@ -20,6 +20,7 @@ export const brands = pgTable("brands", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 120 }).notNull(),
   slug: varchar("slug", { length: 140 }).notNull().unique(),
+  imagePath: varchar("image_path", { length: 500 }),
 });
 
 export const products = pgTable("products", {
@@ -49,6 +50,17 @@ export const productImages = pgTable("product_images", {
   position: integer("position").notNull().default(0),
 });
 
+export const productVariants = pgTable("product_variants", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  // Nombre del tono, ej. "Rosa Nude"
+  name: varchar("name", { length: 120 }).notNull(),
+  imagePath: varchar("image_path", { length: 500 }).notNull(),
+  position: integer("position").notNull().default(0),
+});
+
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   code: varchar("code", { length: 20 }).notNull().unique(),
@@ -71,8 +83,12 @@ export const orderItems = pgTable("order_items", {
   productId: integer("product_id").references(() => products.id, {
     onDelete: "set null",
   }),
-  // Nombre y precio congelados al momento del pedido
+  variantId: integer("variant_id").references(() => productVariants.id, {
+    onDelete: "set null",
+  }),
+  // Nombre, tono y precio congelados al momento del pedido
   productName: varchar("product_name", { length: 200 }).notNull(),
+  variantName: varchar("variant_name", { length: 120 }),
   unitPrice: integer("unit_price").notNull(),
   quantity: integer("quantity").notNull(),
 });
@@ -95,6 +111,7 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     references: [brands.id],
   }),
   images: many(productImages),
+  variants: many(productVariants),
 }));
 
 export const productImagesRelations = relations(productImages, ({ one }) => ({
@@ -103,6 +120,16 @@ export const productImagesRelations = relations(productImages, ({ one }) => ({
     references: [products.id],
   }),
 }));
+
+export const productVariantsRelations = relations(
+  productVariants,
+  ({ one }) => ({
+    product: one(products, {
+      fields: [productVariants.productId],
+      references: [products.id],
+    }),
+  })
+);
 
 export const ordersRelations = relations(orders, ({ many }) => ({
   items: many(orderItems),
@@ -117,10 +144,15 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
     fields: [orderItems.productId],
     references: [products.id],
   }),
+  variant: one(productVariants, {
+    fields: [orderItems.variantId],
+    references: [productVariants.id],
+  }),
 }));
 
 export type Product = typeof products.$inferSelect;
 export type ProductImage = typeof productImages.$inferSelect;
+export type ProductVariant = typeof productVariants.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Brand = typeof brands.$inferSelect;
 export type Order = typeof orders.$inferSelect;

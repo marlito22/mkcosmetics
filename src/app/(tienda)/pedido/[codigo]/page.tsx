@@ -48,6 +48,7 @@ export default async function PedidoPage({
               <div key={item.id} className="flex justify-between">
                 <span className="pr-2">
                   {item.quantity} × {item.productName}
+                  {item.variantName ? ` (${item.variantName})` : ""}
                 </span>
                 <span className="shrink-0 text-muted-foreground">
                   {formatCOP(item.unitPrice * item.quantity)}

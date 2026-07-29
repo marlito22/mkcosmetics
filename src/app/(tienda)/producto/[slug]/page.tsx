@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getProductBySlug, getProducts } from "@/lib/queries";
-import { formatCOP, imageUrl } from "@/lib/format";
+import { formatCOP } from "@/lib/format";
 import { ProductPurchase } from "@/components/product-purchase";
+import { ProductGallery } from "@/components/product-gallery";
 import { ProductCard } from "@/components/product-card";
 
 export const dynamic = "force-dynamic";
@@ -26,8 +26,6 @@ export default async function ProductoPage({
         .filter((p) => p.id !== product.id)
         .slice(0, 4)
     : [];
-
-  const mainImage = product.images[0]?.path ?? null;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -54,16 +52,7 @@ export default async function ProductoPage({
       </nav>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-2">
-        <div className="relative aspect-square overflow-hidden rounded-3xl bg-muted">
-          <Image
-            src={imageUrl(mainImage)}
-            alt={product.name}
-            fill
-            priority
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover"
-          />
-        </div>
+        <ProductGallery images={product.images} productName={product.name} />
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">

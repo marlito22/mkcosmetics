@@ -24,7 +24,7 @@ export default async function EditarProductoPage({
   const [product, cats, brs] = await Promise.all([
     db.query.products.findFirst({
       where: eq(products.id, productId),
-      with: { images: true },
+      with: { images: true, variants: true },
     }),
     getCategories(),
     getBrands(),

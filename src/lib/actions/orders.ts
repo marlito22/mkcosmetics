@@ -33,14 +33,22 @@ export async function createOrder(
     return { ok: false, error: "El carrito está vacío o es inválido." };
   }
 
-  // Revalida productos y precios contra la base de datos
+  // Revalida productos, tonos y precios contra la base de datos
   const ids = parsedItems.data.map((i) => i.productId);
   const dbProducts = await db.query.products.findMany({
     where: inArray(products.id, ids),
+    with: { variants: true },
   });
   const productMap = new Map(dbProducts.map((p) => [p.id, p]));
 
-  const lines: { productId: number; productName: string; unitPrice: number; quantity: number }[] = [];
+  const lines: {
+    productId: number;
+    variantId: number | null;
+    productName: string;
+    variantName: string | null;
+    unitPrice: number;
+    quantity: number;
+  }[] = [];
   for (const item of parsedItems.data) {
     const product = productMap.get(item.productId);
     if (!product || !product.available) {
@@ -49,9 +57,28 @@ export async function createOrder(
         error: "Uno de los productos del carrito ya no está disponible. Actualiza tu carrito.",
       };
     }
+
+    let variant = null;
+    if (item.variantId) {
+      variant = product.variants.find((v) => v.id === item.variantId) ?? null;
+      if (!variant) {
+        return {
+          ok: false,
+          error: "Uno de los tonos elegidos ya no existe. Actualiza tu carrito.",
+        };
+      }
+    } else if (product.variants.length > 0) {
+      return {
+        ok: false,
+        error: `Elige un tono para "${product.name}" antes de continuar.`,
+      };
+    }
+
     lines.push({
       productId: product.id,
+      variantId: variant?.id ?? null,
       productName: product.name,
+      variantName: variant?.name ?? null,
       unitPrice: product.price,
       quantity: item.quantity,
     });

@@ -15,9 +15,10 @@ const nextConfig: NextConfig = {
     serverActions: {
       // Dominio público detrás del Cloudflare Tunnel: valida el CSRF check de los Server Actions
       allowedOrigins: ["mkcosmetic.com", "www.mkcosmetic.com"],
-      // Por defecto Next limita el body a 1mb; las fotos de producto admiten hasta 8mb
-      // (ver MAX_IMAGE_BYTES en src/lib/actions/products.ts), + margen para overhead de multipart.
-      bodySizeLimit: "10mb",
+      // Por defecto Next limita el body a 1mb; un producto admite hasta 6 imágenes
+      // generales + 10 tonos de hasta 4mb cada uno (ver MAX_IMAGE_BYTES/MAX_GENERAL_IMAGES/
+      // MAX_VARIANTS en src/lib/actions/products.ts), + margen para overhead de multipart.
+      bodySizeLimit: "70mb",
     },
   },
 };

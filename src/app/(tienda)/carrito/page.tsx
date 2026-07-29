@@ -38,7 +38,7 @@ export default function CarritoPage() {
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_360px]">
         <ul className="space-y-4">
           {items.map((item) => (
-            <li key={item.productId}>
+            <li key={`${item.productId}-${item.variantId ?? "base"}`}>
               <Card className="py-0">
                 <CardContent className="flex gap-4 p-4">
                   <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-muted">
@@ -59,9 +59,11 @@ export default function CarritoPage() {
                         >
                           {item.name}
                         </Link>
-                        {item.brand && (
+                        {(item.brand || item.variantName) && (
                           <p className="text-xs text-muted-foreground">
-                            {item.brand}
+                            {[item.brand, item.variantName]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </p>
                         )}
                       </div>
@@ -70,7 +72,7 @@ export default function CarritoPage() {
                         size="icon"
                         className="size-8 text-muted-foreground hover:text-destructive"
                         aria-label={`Quitar ${item.name}`}
-                        onClick={() => removeItem(item.productId)}
+                        onClick={() => removeItem(item.productId, item.variantId)}
                       >
                         <Trash2 className="size-4" />
                       </Button>
@@ -83,7 +85,11 @@ export default function CarritoPage() {
                           className="size-8"
                           aria-label="Restar uno"
                           onClick={() =>
-                            setQuantity(item.productId, item.quantity - 1)
+                            setQuantity(
+                              item.productId,
+                              item.variantId,
+                              item.quantity - 1
+                            )
                           }
                         >
                           <Minus className="size-3.5" />
@@ -95,7 +101,11 @@ export default function CarritoPage() {
                           className="size-8"
                           aria-label="Sumar uno"
                           onClick={() =>
-                            setQuantity(item.productId, item.quantity + 1)
+                            setQuantity(
+                              item.productId,
+                              item.variantId,
+                              item.quantity + 1
+                            )
                           }
                         >
                           <Plus className="size-3.5" />
@@ -118,11 +128,12 @@ export default function CarritoPage() {
             <div className="space-y-2 text-sm">
               {items.map((item) => (
                 <div
-                  key={item.productId}
+                  key={`${item.productId}-${item.variantId ?? "base"}`}
                   className="flex justify-between text-muted-foreground"
                 >
                   <span className="line-clamp-1 pr-2">
                     {item.quantity} × {item.name}
+                    {item.variantName ? ` (${item.variantName})` : ""}
                   </span>
                   <span className="shrink-0">
                     {formatCOP(item.price * item.quantity)}

@@ -3,18 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
-import path from "node:path";
-import fs from "node:fs/promises";
-import sharp from "sharp";
 import { z } from "zod";
 import { db } from "@/db";
-import { productImages, products } from "@/db/schema";
+import { productImages, productVariants, products } from "@/db/schema";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { slugify } from "@/lib/slug";
+import { saveImage as saveImageToDisk, unlinkImage } from "@/lib/images";
 
-const UPLOADS_DIR = path.join(process.cwd(), "uploads", "products");
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_GENERAL_IMAGES = 6;
+const MAX_VARIANTS = 10;
 
 const productSchema = z.object({
   name: z.string().min(3).max(200),
@@ -47,21 +44,7 @@ async function uniqueSlug(name: string, excludeId?: number): Promise<string> {
 }
 
 async function saveImage(file: File, slug: string): Promise<string> {
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    throw new Error("Formato de imagen no permitido (usa JPG, PNG o WebP).");
-  }
-  if (file.size > MAX_IMAGE_BYTES) {
-    throw new Error("La imagen no puede superar 8 MB.");
-  }
-  await fs.mkdir(UPLOADS_DIR, { recursive: true });
-  const fileName = `${slug}-${Date.now()}.webp`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await sharp(buffer)
-    .rotate()
-    .resize(1200, 1200, { fit: "inside", withoutEnlargement: true })
-    .webp({ quality: 82 })
-    .toFile(path.join(UPLOADS_DIR, fileName));
-  return `products/${fileName}`;
+  return saveImageToDisk(file, slug, "products");
 }
 
 function parseProductForm(formData: FormData) {
@@ -76,6 +59,42 @@ function parseProductForm(formData: FormData) {
   });
 }
 
+function collectNewGeneralImages(formData: FormData): File[] {
+  return formData
+    .getAll("newImages")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+}
+
+type VariantRow = {
+  id: number | null;
+  name: string;
+  image: File | null;
+};
+
+function collectVariantRows(formData: FormData): VariantRow[] {
+  const ids = formData.getAll("variantId");
+  const names = formData.getAll("variantName");
+  const images = formData.getAll("variantImage");
+
+  const rows: VariantRow[] = [];
+  for (let i = 0; i < names.length; i++) {
+    const rawName = names[i];
+    const name = typeof rawName === "string" ? rawName.trim() : "";
+    const rawId = ids[i];
+    const id =
+      typeof rawId === "string" && rawId.trim() !== ""
+        ? Number(rawId)
+        : null;
+    const rawImage = images[i];
+    const image =
+      rawImage instanceof File && rawImage.size > 0 ? rawImage : null;
+
+    if (!name && !image && id === null) continue; // fila vacía sin usar
+    rows.push({ id, name, image });
+  }
+  return rows;
+}
+
 export async function createProduct(
   _prev: ProductFormState | undefined,
   formData: FormData
@@ -87,43 +106,83 @@ export async function createProduct(
     return { error: "Revisa los datos: nombre (mín. 3 letras) y precio son obligatorios." };
   }
 
-  const slug = await uniqueSlug(parsed.data.name);
-
-  let imagePath: string | null = null;
-  const file = formData.get("image");
-  if (file instanceof File && file.size > 0) {
-    try {
-      imagePath = await saveImage(file, slug);
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : "Error al subir la imagen." };
-    }
+  const generalFiles = collectNewGeneralImages(formData);
+  if (generalFiles.length > MAX_GENERAL_IMAGES) {
+    return { error: `Puedes subir hasta ${MAX_GENERAL_IMAGES} imágenes generales.` };
   }
 
-  let product;
-  try {
-    [product] = await db
-      .insert(products)
-      .values({
-        name: parsed.data.name,
-        slug,
-        description: parsed.data.description ?? null,
-        price: parsed.data.price,
-        categoryId: parsed.data.categoryId ?? null,
-        brandId: parsed.data.brandId ?? null,
-        available: parsed.data.available,
-        featured: parsed.data.featured,
-      })
-      .returning();
+  const variantRows = collectVariantRows(formData);
+  if (variantRows.length > MAX_VARIANTS) {
+    return { error: `Puedes agregar hasta ${MAX_VARIANTS} tonos.` };
+  }
+  if (variantRows.some((row) => !row.name)) {
+    return { error: "Cada tono necesita un nombre." };
+  }
+  if (variantRows.some((row) => !row.image)) {
+    return { error: "Cada tono necesita su propia imagen." };
+  }
 
-    if (imagePath) {
-      await db.insert(productImages).values({
-        productId: product.id,
-        path: imagePath,
-        position: 0,
-      });
-    }
+  const slug = await uniqueSlug(parsed.data.name);
+
+  let generalPaths: string[] = [];
+  let variantData: { name: string; path: string }[] = [];
+  try {
+    generalPaths = await Promise.all(
+      generalFiles.map((file) => saveImage(file, slug))
+    );
+    variantData = await Promise.all(
+      variantRows.map(async (row) => ({
+        name: row.name,
+        path: await saveImage(row.image as File, `${slug}-tono`),
+      }))
+    );
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Error al subir las imágenes." };
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      const [product] = await tx
+        .insert(products)
+        .values({
+          name: parsed.data.name,
+          slug,
+          description: parsed.data.description ?? null,
+          price: parsed.data.price,
+          categoryId: parsed.data.categoryId ?? null,
+          brandId: parsed.data.brandId ?? null,
+          available: parsed.data.available,
+          featured: parsed.data.featured,
+        })
+        .returning();
+
+      if (generalPaths.length > 0) {
+        await tx.insert(productImages).values(
+          generalPaths.map((imgPath, i) => ({
+            productId: product.id,
+            path: imgPath,
+            position: i,
+          }))
+        );
+      }
+
+      if (variantData.length > 0) {
+        await tx.insert(productVariants).values(
+          variantData.map((v, i) => ({
+            productId: product.id,
+            name: v.name,
+            imagePath: v.path,
+            position: i,
+          }))
+        );
+      }
+    });
   } catch (err) {
     console.error("Error al crear el producto:", err);
+    // Las imágenes ya se guardaron en disco; limpiar para no dejar huérfanas
+    await Promise.all(
+      [...generalPaths, ...variantData.map((v) => v.path)].map(unlinkImage)
+    );
     return {
       error: err instanceof Error ? err.message : "Error al crear el producto.",
     };
@@ -144,7 +203,7 @@ export async function updateProduct(
   try {
     existing = await db.query.products.findFirst({
       where: eq(products.id, productId),
-      with: { images: true },
+      with: { images: true, variants: true },
     });
   } catch (err) {
     console.error(`Error al buscar el producto ${productId}:`, err);
@@ -164,33 +223,121 @@ export async function updateProduct(
       ? existing.slug
       : await uniqueSlug(parsed.data.name, productId);
 
-  const file = formData.get("image");
-  if (file instanceof File && file.size > 0) {
-    try {
-      const imagePath = await saveImage(file, slug);
-      // Reemplaza la imagen principal y elimina el archivo anterior
-      const oldImage = existing.images[0];
-      if (oldImage) {
-        await db.delete(productImages).where(eq(productImages.id, oldImage.id));
-        await fs
-          .unlink(path.join(process.cwd(), "uploads", oldImage.path))
-          .catch(() => {});
+  // --- Imágenes generales ---
+  const removeImageIds = formData
+    .getAll("removeImage")
+    .map((v) => Number(v))
+    .filter((id) => existing!.images.some((img) => img.id === id));
+  const newGeneralFiles = collectNewGeneralImages(formData);
+  const remainingGeneralCount =
+    existing.images.length - removeImageIds.length + newGeneralFiles.length;
+  if (remainingGeneralCount > MAX_GENERAL_IMAGES) {
+    return { error: `Puedes tener hasta ${MAX_GENERAL_IMAGES} imágenes generales.` };
+  }
+
+  // --- Tonos ---
+  const removeVariantIds = formData
+    .getAll("removeVariant")
+    .map((v) => Number(v))
+    .filter((id) => existing!.variants.some((v) => v.id === id));
+  const variantRows = collectVariantRows(formData);
+  if (variantRows.length > MAX_VARIANTS) {
+    return { error: `Puedes tener hasta ${MAX_VARIANTS} tonos.` };
+  }
+  if (variantRows.some((row) => !row.name)) {
+    return { error: "Cada tono necesita un nombre." };
+  }
+  const newVariantRowsMissingImage = variantRows.some(
+    (row) => row.id === null && !row.image
+  );
+  if (newVariantRowsMissingImage) {
+    return { error: "Cada tono nuevo necesita su propia imagen." };
+  }
+
+  let newGeneralPaths: string[] = [];
+  const variantSaves: { row: VariantRow; path: string | null }[] = [];
+  try {
+    newGeneralPaths = await Promise.all(
+      newGeneralFiles.map((file) => saveImage(file, slug))
+    );
+    for (const row of variantRows) {
+      if (row.image) {
+        const savedPath = await saveImage(row.image, `${slug}-tono`);
+        variantSaves.push({ row, path: savedPath });
+      } else {
+        variantSaves.push({ row, path: null });
       }
-      await db.insert(productImages).values({
-        productId,
-        path: imagePath,
-        position: 0,
-      });
-    } catch (err) {
-      console.error(`Error al guardar la imagen del producto ${productId}:`, err);
-      return {
-        error:
-          err instanceof Error ? err.message : "Error al subir la imagen.",
-      };
     }
+  } catch (err) {
+    await Promise.all(newGeneralPaths.map(unlinkImage));
+    await Promise.all(
+      variantSaves.filter((v) => v.path).map((v) => unlinkImage(v.path as string))
+    );
+    return { error: err instanceof Error ? err.message : "Error al subir las imágenes." };
   }
 
   try {
+    await db.transaction(async (tx) => {
+      for (const imgId of removeImageIds) {
+        await tx.delete(productImages).where(eq(productImages.id, imgId));
+      }
+      if (newGeneralPaths.length > 0) {
+        const basePosition =
+          existing!.images.filter((img) => !removeImageIds.includes(img.id))
+            .length;
+        await tx.insert(productImages).values(
+          newGeneralPaths.map((imgPath, i) => ({
+            productId,
+            path: imgPath,
+            position: basePosition + i,
+          }))
+        );
+      }
+
+      for (const imgId of removeVariantIds) {
+        await tx.delete(productVariants).where(eq(productVariants.id, imgId));
+      }
+
+      let variantPosition =
+        existing!.variants.filter((v) => !removeVariantIds.includes(v.id))
+          .length;
+      for (const { row, path: savedPath } of variantSaves) {
+        if (row.id !== null) {
+          // Tono existente: actualizar nombre y, si se subió nueva imagen, reemplazarla
+          const current = existing!.variants.find((v) => v.id === row.id);
+          if (savedPath && current) {
+            await unlinkImage(current.imagePath);
+            await tx
+              .update(productVariants)
+              .set({ name: row.name, imagePath: savedPath })
+              .where(eq(productVariants.id, row.id));
+          } else {
+            await tx
+              .update(productVariants)
+              .set({ name: row.name })
+              .where(eq(productVariants.id, row.id));
+          }
+        } else if (savedPath) {
+          await tx.insert(productVariants).values({
+            productId,
+            name: row.name,
+            imagePath: savedPath,
+            position: variantPosition++,
+          });
+        }
+      }
+    });
+
+    // Eliminar del disco los archivos de las imágenes/tonos removidos
+    for (const imgId of removeImageIds) {
+      const img = existing.images.find((i) => i.id === imgId);
+      if (img) await unlinkImage(img.path);
+    }
+    for (const varId of removeVariantIds) {
+      const v = existing.variants.find((i) => i.id === varId);
+      if (v) await unlinkImage(v.imagePath);
+    }
+
     await db
       .update(products)
       .set({
@@ -221,15 +368,16 @@ export async function deleteProduct(productId: number): Promise<void> {
   try {
     const existing = await db.query.products.findFirst({
       where: eq(products.id, productId),
-      with: { images: true },
+      with: { images: true, variants: true },
     });
     if (!existing) return;
 
     await db.delete(products).where(eq(products.id, productId));
     for (const img of existing.images) {
-      await fs
-        .unlink(path.join(process.cwd(), "uploads", img.path))
-        .catch(() => {});
+      await unlinkImage(img.path);
+    }
+    for (const v of existing.variants) {
+      await unlinkImage(v.imagePath);
     }
   } catch (err) {
     console.error(`Error al eliminar el producto ${productId}:`, err);
@@ -239,4 +387,3 @@ export async function deleteProduct(productId: number): Promise<void> {
   revalidatePath("/");
   revalidatePath("/admin/productos");
 }
-

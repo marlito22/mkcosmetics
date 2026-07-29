@@ -39,7 +39,10 @@ export function CartDrawer() {
             <div className="flex-1 overflow-y-auto px-4">
               <ul className="divide-y divide-border">
                 {items.map((item) => (
-                  <li key={item.productId} className="flex gap-3 py-4">
+                  <li
+                    key={`${item.productId}-${item.variantId ?? "base"}`}
+                    className="flex gap-3 py-4"
+                  >
                     <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-muted">
                       <Image
                         src={imageUrl(item.imagePath)}
@@ -57,9 +60,11 @@ export function CartDrawer() {
                       >
                         {item.name}
                       </Link>
-                      {item.brand && (
+                      {(item.brand || item.variantName) && (
                         <span className="text-xs text-muted-foreground">
-                          {item.brand}
+                          {[item.brand, item.variantName]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </span>
                       )}
                       <div className="mt-1 flex items-center justify-between">
@@ -70,7 +75,11 @@ export function CartDrawer() {
                             className="size-7"
                             aria-label="Restar uno"
                             onClick={() =>
-                              setQuantity(item.productId, item.quantity - 1)
+                              setQuantity(
+                                item.productId,
+                                item.variantId,
+                                item.quantity - 1
+                              )
                             }
                           >
                             <Minus className="size-3" />
@@ -84,7 +93,11 @@ export function CartDrawer() {
                             className="size-7"
                             aria-label="Sumar uno"
                             onClick={() =>
-                              setQuantity(item.productId, item.quantity + 1)
+                              setQuantity(
+                                item.productId,
+                                item.variantId,
+                                item.quantity + 1
+                              )
                             }
                           >
                             <Plus className="size-3" />
@@ -100,7 +113,7 @@ export function CartDrawer() {
                       size="icon"
                       className="size-7 self-start text-muted-foreground hover:text-destructive"
                       aria-label={`Quitar ${item.name}`}
-                      onClick={() => removeItem(item.productId)}
+                      onClick={() => removeItem(item.productId, item.variantId)}
                     >
                       <Trash2 className="size-4" />
                     </Button>

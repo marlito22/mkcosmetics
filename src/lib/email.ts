@@ -10,7 +10,12 @@ type OrderEmailData = {
   customerCity: string;
   notes: string | null;
   total: number;
-  items: { productName: string; unitPrice: number; quantity: number }[];
+  items: {
+    productName: string;
+    variantName?: string | null;
+    unitPrice: number;
+    quantity: number;
+  }[];
 };
 
 function getTransport() {
@@ -41,7 +46,7 @@ function orderHtml(order: OrderEmailData, forVendor: boolean): string {
     .map(
       (i) => `
       <tr>
-        <td style="padding:8px 12px;border-bottom:1px solid #fce7f3;">${escapeHtml(i.productName)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #fce7f3;">${escapeHtml(i.productName)}${i.variantName ? ` <span style="color:#a1a1aa;">(${escapeHtml(i.variantName)})</span>` : ""}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #fce7f3;text-align:center;">${i.quantity}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #fce7f3;text-align:right;">${formatCOP(i.unitPrice)}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #fce7f3;text-align:right;">${formatCOP(i.unitPrice * i.quantity)}</td>

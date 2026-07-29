@@ -8,6 +8,20 @@
       "when": 1785141644562,
       "tag": "0000_panoramic_fantastic_four",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785277352201,
+      "tag": "0001_typical_kid_colt",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785282272261,
+      "tag": "0002_wet_fantastic_four",
+      "breakpoints": true
     }
   ]
 }
