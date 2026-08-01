@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { asc } from "drizzle-orm";
-import { Plus } from "lucide-react";
+import { asc, ilike, or } from "drizzle-orm";
+import { Plus, SearchX } from "lucide-react";
 import { db } from "@/db";
 import { products } from "@/db/schema";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatCOP, imageUrl } from "@/lib/format";
 import { logoutAdmin } from "@/lib/actions/auth";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
+import { ProductSearch } from "@/components/admin/product-search";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +27,20 @@ export const metadata: Metadata = {
   title: "Productos | Admin",
 };
 
-export default async function AdminProductosPage() {
+type SearchParams = Promise<{ q?: string }>;
+
+export default async function AdminProductosPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const { q } = await searchParams;
+  const term = q?.trim();
+
   const items = await db.query.products.findMany({
+    where: term
+      ? or(ilike(products.name, `%${term}%`), ilike(products.description, `%${term}%`))
+      : undefined,
     with: { images: true, brand: true, category: true },
     orderBy: asc(products.name),
   });
@@ -50,6 +63,17 @@ export default async function AdminProductosPage() {
         </div>
       </div>
 
+      <ProductSearch />
+
+      {items.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
+          <SearchX className="size-12 opacity-40" />
+          <p>No encontramos productos con &quot;{term}&quot;.</p>
+          <Button asChild variant="outline">
+            <Link href="/admin/productos">Ver todos los productos</Link>
+          </Button>
+        </div>
+      ) : (
       <Card className="py-0">
         <CardContent className="p-0">
           <div className="hidden md:block">
@@ -175,6 +199,7 @@ export default async function AdminProductosPage() {
           </div>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
